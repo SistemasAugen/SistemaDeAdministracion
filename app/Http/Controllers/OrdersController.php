@@ -151,7 +151,7 @@ class OrdersController extends Controller
             $user->laboratory;
 
             if(!$user->laboratory || is_null($search)) {
-                return response()->json(compact('rows', 'total', '$totalNotFiltered'));
+                return response()->json(compact('rows', 'total', 'totalNotFiltered'));
             }
 
             $rows = Order::with('branch')
@@ -753,7 +753,11 @@ class OrdersController extends Controller
                 }
                 else {
                     if($field == 'delivered_date')
-                        $orders =  Order::whereBetween($field, [$start, $end])->where('status', '<>', 'cancelado')->whereNull('warranty_date')->orderBy($field, 'ASC')->orderByRaw('cast(rx as unsigned)')->get();
+                        $orders =  Order::whereBetween($field, [$start, $end])->where('status', '<>', 'cancelado')->where(function($query) {
+                                                $query->whereNull('warranty_date')
+                                                      ->orWhereRaw('warranty_date > delivered_date');
+                        })        
+                                                      ->orderBy($field, 'ASC')->orderByRaw('cast(rx as unsigned)')->get();
                     else
                         $orders =  Order::whereBetween($field, [$start, $end])->where('status', '<>', 'cancelado')->orderBy($field, 'ASC')->orderByRaw('cast(rx as unsigned)')->get();
                 }
@@ -781,14 +785,14 @@ class OrdersController extends Controller
                    $user->hasRole('Ejecutivo') ||
                    $user->hasRole('laboratorio')) {
                     $data = [
-                        'terminado' => Order::where('branch_id', $user->branch_id)->whereBetween('finish_date', [$start, $end])->count(),
+                        'terminado' => Order::where('branch_id', $user->branch_id)->whereBetween('finish_date', [$start, $end])->where('status', '<>', 'cancelado')->count(),
                         'entregado' => Order::where('branch_id', $user->branch_id)->whereBetween('delivered_date', [$start, $end])
                                             ->where(function($query) {
                                                 $query->whereNull('warranty_date')
                                                       ->orWhere('warranty_date', '>', 'delivered_date');
-                                            })->count(),
-                        'pagado'    => Order::where('branch_id', $user->branch_id)->whereBetween('payment_date', [$start, $end])->count(),
-                        'garantia'    => Order::where('branch_id', $user->branch_id)->whereBetween('delivered_date2', [$start, $end])->count()//->where('warranty_date', '<=', $date)->count()
+                                            })->where('status', '<>', 'cancelado')->count(),
+                        'pagado'    => Order::where('branch_id', $user->branch_id)->whereBetween('payment_date', [$start, $end])->where('status', '<>', 'cancelado')->count(),
+                        'garantia'    => Order::where('branch_id', $user->branch_id)->whereBetween('delivered_date2', [$start, $end])->where('status', '<>', 'cancelado')->count()//->where('warranty_date', '<=', $date)->count()
                     ];
                     $data['money'] = [
                         'terminado' => $this->generateTotal(Order::where('branch_id', $user->branch_id)->whereBetween('finish_date', [$start, $end])->where('status', '<>', 'cancelado')->orderBy('finish_date', 'ASC')->orderByRaw('cast(rx as unsigned)')->get()),
@@ -807,15 +811,16 @@ class OrdersController extends Controller
                         'garantia'    => $this->generateTotal(Order::where('branch_id', $user->branch_id)->whereBetween('delivered_date2', [$start, $end])->where('status', '<>', 'cancelado')->orderBy('delivered_date2', 'ASC')->orderByRaw('cast(rx as unsigned)')->get())//->where('warranty_date', '<=', $date)->count()
                     ];
                 } else {
+                    
                     $data = [
-                        'terminado' => Order::whereBetween('finish_date', [$start, $end])->count(),
+                        'terminado' => Order::whereBetween('finish_date', [$start, $end])->where('status', '<>', 'cancelado')->count(),
                         'entregado' => Order::whereBetween('delivered_date', [$start, $end])
                                             ->where(function($query) {
                                                 $query->whereNull('warranty_date')
-                                                      ->orWhere('warranty_date', '>', 'delivered_date');
-                                            })->count(),
-                        'pagado'    => Order::whereBetween('payment_date', [$start, $end])->count(),
-                        'garantia'    => Order::whereBetween('delivered_date2', [$start, $end])->count()//->where('warranty_date', '<=', $date)->count()
+                                                      ->orWhereRaw('warranty_date > delivered_date');
+                                            })->where('status', '<>', 'cancelado')->count(),
+                        'pagado'    => Order::whereBetween('payment_date', [$start, $end])->where('status', '<>', 'cancelado')->count(),
+                        'garantia'    => Order::whereBetween('delivered_date2', [$start, $end])->where('status', '<>', 'cancelado')->count()//->where('warranty_date', '<=', $date)->count()
                     ];
                     $data['money'] = [
                         'terminado' => $this->generateTotal(Order::whereBetween('finish_date', [$start, $end])->where('status', '<>', 'cancelado')->orderBy('finish_date', 'ASC')->orderByRaw('cast(rx as unsigned)')->get()),

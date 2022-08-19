@@ -42,7 +42,7 @@ class ClientsController extends Controller {
                               ->get();
                 $total = 10;
                 $totalNotFiltered = Client::count();
-                return response()->json(compact('rows', 'total', '$totalNotFiltered'));
+                return response()->json(compact('rows', 'total', 'totalNotFiltered'));
             }
 
             $rows = Client::with('branch', 'state', 'town', 'facturacion');

@@ -194,6 +194,7 @@ class BranchesController extends Controller
             $branch->clients_orders = $data->q5;
             $branch->orders = Order::whereBetween('created_at', [ $startDate, $endDate ])
                             ->where("branch_id", $branch->id)
+                            ->where('status', '<>', 'cancelado')
                             ->count();
 
             $ordersCount += $branch->orders;
@@ -408,12 +409,16 @@ class BranchesController extends Controller
 
     private function _getCost($order) {
         $phs    = ProductHasSubcategory::findOrFail($order->product_has_subcategory_id);
-        $phsNew = ProductHasSubcategory::where('product_id', $phs->product_id)
+        /* $phsNew = ProductHasSubcategory::where('product_id', $phs->product_id)
                                        ->where('subcategory_id', $phs->subcategory_id)
+                                       ->where('category_id', $phs->category_id)
                                        ->where('cost', '<>', '0')
-                                       ->first();
+                                       ->latest()
+                                       ->first(); */
+                                       
+
         try {
-            $cost = $phsNew->cost;
+            $cost = $phs->cost;
         } catch (\Exception $e) {
             $cost = 0;
         }

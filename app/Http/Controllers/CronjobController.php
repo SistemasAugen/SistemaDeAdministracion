@@ -86,15 +86,16 @@ class CronjobController extends Controller {
                             $m->to('sistemas@augenlabs.com')->subject('Tus recetas ¡ESTÁN LISTAS!');
                         });
                     }
-                    Mail::send('emails.order_ready', compact('orders'), function ($m) use ($client) {
-                        $m->from('contacto@augenlabs.com', 'Augen Labs');
-                        $emailsToSend = explode(';', $client->notification_mail);
-
-                        foreach ($emailsToSend as $email) {
-                            $m->to($email)->subject('Tus recetas ¡ESTÁN LISTAS!');
-                        }
-                    });
-
+                    try {
+                            Mail::send('emails.order_ready', compact('orders'), function ($m) use ($client) {
+                            $m->from('contacto@augenlabs.com', 'Augen Labs');
+                            $emailsToSend = explode(';', $client->notification_mail);
+    
+                            foreach ($emailsToSend as $email) {
+                                $m->to($email)->subject('Tus recetas ¡ESTÁN LISTAS!');
+                            }
+                        });
+                    } catch(\Exception $e) {}
                     $mailCounter++;
                 }
             }
